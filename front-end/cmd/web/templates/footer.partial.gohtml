@@ -1,0 +1,15 @@
+{{define "footer"}}
+<div class="container">
+  <div class="row">
+    <div class="col text-center">
+      <hr />
+      <small class="text-muted" id="cr">Copyright &copy; </small>
+    </div>
+  </div>
+</div>
+<script>
+  const c = document.getElementById("cr");
+  const year = new Date().getFullYear();
+  c.innerText = "Copyrigth ©" + year;
+</script>
+{{ end }}
