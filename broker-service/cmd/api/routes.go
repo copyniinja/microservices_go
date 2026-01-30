@@ -20,7 +20,7 @@ func (a *Config) routes() http.Handler {
 	}))
 	r.Use(middleware.Heartbeat("/health"))
 
-	r.Get("/", a.Broker)
+	r.Post("/", a.Broker)
 	return r
 
 }

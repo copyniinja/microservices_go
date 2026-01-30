@@ -1,36 +1,75 @@
 {{template "base" .}}
 
 {{define "content" }}
-    <div class="container">
-        <div class="row">
-            <div class="col">
-                <h1 class="mt-5">Test microservices</h1>
-                <hr>
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h1 class="mt-5">Test microservices</h1>
+      <hr />
+      <a
+        href="javascript:void(0)"
+        class="btn btn-outline-secondary"
+        id="brokerBtn"
+        >Test Broker</a
+      >
 
-                <div id="output" class="mt-5" style="outline: 1px solid silver; padding: 2em;">
-                    <span class="text-muted">Output shows here...</span>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <h4 class="mt-5">Sent</h4>
-                <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
-                    <pre id="payload"><span class="text-muted">Nothing sent yet...</span></pre>
-                </div>
-            </div>
-            <div class="col">
-                <h4 class="mt-5">Received</h4>
-                <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
-                    <pre id="received"><span class="text-muted">Nothing received yet...</span></pre>
-                </div>
-            </div>
-        </div>
+      <div
+        id="output"
+        class="mt-5"
+        style="outline: 1px solid silver; padding: 2em"
+      >
+        <span class="text-muted">Output shows here...</span>
+      </div>
     </div>
-{{end}}
+  </div>
+  <div class="row">
+    <div class="col">
+      <h4 class="mt-5">Sent</h4>
+      <div class="mt-1" style="outline: 1px solid silver; padding: 2em">
+        <pre
+          id="payload"
+        ><span class="text-muted">Nothing sent yet...</span></pre>
+      </div>
+    </div>
+    <div class="col">
+      <h4 class="mt-5">Received</h4>
+      <div class="mt-1" style="outline: 1px solid silver; padding: 2em">
+        <pre
+          id="received"
+        ><span class="text-muted">Nothing received yet...</span></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}
 
 {{define "js"}}
-    <script>
-        
-    </script>
-{{end}}
+<script>
+  const brokerButton = document.getElementById("brokerBtn");
+  const output = document.getElementById("output");
+  const sent = document.getElementById("payload");
+  const received = document.getElementById("received");
+
+  brokerButton.addEventListener("click", async () => {
+    // Example payload to send
+    const payload = { message: "test" };
+
+    try {
+      const resp = await fetch("http://localhost:4000", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await resp.json();
+      output.innerText = "Response from broker-service";
+      received.innerText = JSON.stringify(data, null, 2);
+
+      sent.innerText = JSON.stringify(payload, null, 2);
+    } catch (err) {
+      received.innerText = "Error: " + err;
+      output.innerText = "Failed!";
+    }
+  });
+</script>
+{{ end }}
