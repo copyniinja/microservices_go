@@ -19,6 +19,8 @@ func (a *Config) routes() http.Handler {
 		AllowCredentials: true,
 	}))
 	r.Use(middleware.Heartbeat("/health"))
+
+	r.Get("/", a.Broker)
 	return r
 
 }
