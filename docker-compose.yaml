@@ -14,3 +14,17 @@ services:
       dockerfile: frontend-service.dockerfile
     ports:
       - "8080:8080"
+
+  auth_db:
+    image: postgres:16
+    container_name: auth_postgres_db
+    environment:
+      POSTGRES_USER: faiyaz
+      POSTGRES_PASSWORD: faiyaz
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth_pg_data:/var/lib/postgresql/data
+volumes:
+  auth_pg_data:
