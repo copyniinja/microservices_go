@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -19,6 +20,9 @@ func (a *Config) routes() http.Handler {
 		AllowCredentials: true,
 	}))
 	r.Use(middleware.Heartbeat("/health"))
+	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Hello from auth server")
+	})
 
 	return r
 

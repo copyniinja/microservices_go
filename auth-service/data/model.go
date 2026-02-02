@@ -14,16 +14,15 @@ const dbTimeout = time.Second * 3
 
 var db *sql.DB
 
-func New(dbPool *sql.DB) Models {
-	db = dbPool
-
-	return Models{
-		User: User{},
+func New(conn *sql.DB) *Models {
+	db = conn
+	return &Models{
+		User: &User{},
 	}
 }
 
 type Models struct {
-	User User
+	User *User
 }
 
 type User struct {
