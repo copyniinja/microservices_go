@@ -15,9 +15,9 @@ services:
     ports:
       - "8080:8080"
 
-  auth_db:
+  auth-db:
     image: postgres:16
-    container_name: auth_postgres_db
+    container_name: auth-postgres-db
     environment:
       POSTGRES_USER: faiyaz
       POSTGRES_PASSWORD: faiyaz
@@ -26,5 +26,20 @@ services:
       - "5432:5432"
     volumes:
       - auth_pg_data:/var/lib/postgresql/data
+  auth-service:
+    container_name: auth-service
+    depends_on:
+      - auth-db
+    build:
+      context: ./auth-service
+      dockerfile: auth-service.dockerfile
+    environment:
+      DB_USER: faiyaz
+      DB_PASSWORD: faiyaz
+      DB_NAME: auth_db
+      DB_HOST: auth-db
+      DB_PORT: "5432"
+    ports:
+      - "5000:5000"
 volumes:
   auth_pg_data:
