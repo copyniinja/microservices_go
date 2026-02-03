@@ -24,6 +24,9 @@ func (a *Config) routes() http.Handler {
 		fmt.Fprint(w, "Hello from auth server")
 	})
 
+	r.Post("/authenticate", a.Authenticate)
+	r.Post("/register", a.Register)
+
 	return r
 
 }
