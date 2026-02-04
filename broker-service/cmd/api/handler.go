@@ -67,6 +67,8 @@ func (a *Config) authenticate(w http.ResponseWriter, payload clients.AuthPayload
 		w.Write([]byte("Auth service error: " + err.Error()))
 		return
 	}
+
 	//  Respond back to the client
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(authResp)
 }

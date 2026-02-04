@@ -60,7 +60,11 @@ func (auth *AuthClient) Login(ctx context.Context, payload *AuthPayload) (*AuthR
 	defer resp.Body.Close()
 
 	// Check if the status is ok
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("Wrong Credentials")
+	}
+
+	if resp.StatusCode != http.StatusAccepted {
 		return nil, fmt.Errorf("Auth service return status code %d", resp.StatusCode)
 	}
 

@@ -20,7 +20,7 @@ type Config struct {
 
 func main() {
 
-	authBaseUrl := "http://auth-service:4000"
+	authBaseUrl := "http://auth-service:5000"
 	app := Config{
 		clients: clients.NewClients(authBaseUrl),
 	}
