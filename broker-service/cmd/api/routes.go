@@ -21,6 +21,7 @@ func (a *Config) routes() http.Handler {
 	r.Use(middleware.Heartbeat("/health"))
 
 	r.Post("/", a.Broker)
+	r.Post("/handle", a.HandleSubmission)
 	return r
 
 }
