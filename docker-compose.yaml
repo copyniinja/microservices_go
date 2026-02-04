@@ -41,5 +41,31 @@ services:
       DB_PORT: "5432"
     ports:
       - "5000:5000"
+  logger-db:
+    image: mongo:7.0
+    container_name: logger-mongo-db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secret
+      MONGO_INITDB_DATABASE: logs
+    volumes:
+      - mongo_data:/data/db
+
+  logger-service:
+    container_name: logger-service
+    depends_on:
+      - logger-db
+    build:
+      context: ./logger-service
+      dockerfile: logger-service.dockerfile
+    environment:
+      MONGODB_URI: mongodb://admin:secret@logger-db:27017/logs?authSource=admin
+    ports:
+      - "6000:6000"
+
 volumes:
   auth_pg_data:
+  mongo_data:

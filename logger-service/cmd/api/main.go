@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -32,22 +33,45 @@ func main() {
 		}
 		fmt.Println("MongoDB disconnected.")
 	}()
+
+	// Server
+	app := Config{}
+	srv := &http.Server{
+		Addr:    webPort,
+		Handler: app.routes(),
+	}
+
+	srv.ListenAndServe()
+
 }
 
 func ConnectMongo() (*mongo.Client, error) {
-	mongoUrl = os.Getenv("MONGODB_URI")
+	mongoUrl := os.Getenv("MONGODB_URI")
 
-	mongoClient, err := mongo.Connect(options.Client().ApplyURI(mongoUrl))
-	if err != nil {
-		log.Fatal(err)
+	var client *mongo.Client
+	var err error
+
+	maxAttempts := 10
+
+	for i := 1; i <= maxAttempts; i++ {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		client, err = mongo.Connect(options.Client().ApplyURI(mongoUrl))
+		if err == nil {
+			err = client.Ping(ctx, nil)
+		}
+
+		cancel()
+
+		if err == nil {
+			fmt.Println("Connected to MongoDB")
+			return client, nil
+		}
+
+		fmt.Printf("Mongo not ready... retrying (%d/%d)\n", i, maxAttempts)
+		time.Sleep(2 * time.Second)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := mongoClient.Ping(ctx, nil); err != nil {
-		return nil, fmt.Errorf("could not ping mongodb:%v", err)
-	}
-
-	return mongoClient, nil
+	return nil, fmt.Errorf("could not connect to mongo after %d attempts: %v", maxAttempts, err)
 }
