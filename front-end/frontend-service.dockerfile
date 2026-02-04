@@ -9,5 +9,6 @@ RUN go build -o frontend ./cmd/web
 FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/frontend .
+COPY --from=builder /app/cmd/web/templates ./templates
 EXPOSE 8080
 CMD ["./frontend"]
