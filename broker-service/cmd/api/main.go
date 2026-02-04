@@ -1,6 +1,7 @@
 package main
 
 import (
+	"broker-service/cmd/clients"
 	"context"
 	"fmt"
 	"log"
@@ -13,11 +14,16 @@ import (
 
 const webPort = 4000
 
-type Config struct{}
+type Config struct {
+	clients *clients.Clients
+}
 
 func main() {
 
-	app := Config{}
+	authBaseUrl := "http://auth-service:4000"
+	app := Config{
+		clients: clients.NewClients(authBaseUrl),
+	}
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", webPort),
