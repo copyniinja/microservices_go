@@ -16,6 +16,7 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 
 	err := app.readJSON(w, r, &requestPayload)
 	if err != nil {
+		fmt.Println(err)
 		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}

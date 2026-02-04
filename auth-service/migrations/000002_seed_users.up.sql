@@ -9,6 +9,6 @@ INSERT INTO users (
     updated_at
 )
 VALUES
-('a1@g.com', 'Faiyaz', 'Ahmed', '$2a$12$HGYPAZFTUOYJmpSJsdd5i.SSce20J3lU4RvnuuG.KdNJrO4AnqyoC', TRUE, NOW(), NOW()),
+('ajib@g.com', 'Faiyaz', 'Ahmed', '$2a$12$T52BAkwkk4o0ckg.fMTBB.5Kgx1JxvF5899J6L3Clt7uPQKCl5kcm', TRUE, NOW(), NOW()),
 ('a2@g.com', 'Rahim', 'Uddin', '$2a$12$HGYPAZFTUOYJmpSJsdd5i.SSce20J3lU4RvnuuG.KdNJrO4AnqyoC', TRUE, NOW(), NOW()),
 ('a3@g.com', 'Karim', 'Hasan', '$2a$12$HGYPAZFTUOYJmpSJsdd5i.SSce20J3lU4RvnuuG.KdNJrO4AnqyoC', TRUE, NOW(), NOW());

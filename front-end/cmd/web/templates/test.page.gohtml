@@ -18,6 +18,9 @@
         id="authBtn"
         >Test Auth</a
       >
+      <a href="javascript:void(0)" class="btn btn-outline-secondary" id="logBtn"
+        >Test Log</a
+      >
 
       <div
         id="output"
@@ -53,6 +56,7 @@
 <script>
   const brokerButton = document.getElementById("brokerBtn");
   const authButton = document.getElementById("authBtn");
+  const logButton = document.getElementById("logBtn");
   const output = document.getElementById("output");
   const sent = document.getElementById("payload");
   const received = document.getElementById("received");
@@ -85,7 +89,7 @@
     const payload = {
       action: "auth",
       auth_payload: {
-        email: "lol@g.com",
+        email: "ajib@g.com",
         password: "a1",
       },
     };
@@ -99,6 +103,34 @@
 
       const data = await resp.json();
       output.innerText = "Response from auth-service";
+      received.innerText = JSON.stringify(data, null, 2);
+
+      sent.innerText = JSON.stringify(payload, null, 2);
+    } catch (err) {
+      received.innerText = "Error: " + err;
+      output.innerText = "Failed!";
+    }
+  });
+
+  logButton.addEventListener("click", async () => {
+    // Example payload to send
+    const payload = {
+      action: "log",
+      log_payload: {
+        Name: "Faiyaz logged In!!!!",
+        Data: "hehehheheheeh",
+      },
+    };
+
+    try {
+      const resp = await fetch("http://localhost:4000/handle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await resp.json();
+      output.innerText = "Response from logger-service";
       received.innerText = JSON.stringify(data, null, 2);
 
       sent.innerText = JSON.stringify(payload, null, 2);

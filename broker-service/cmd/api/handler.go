@@ -4,6 +4,7 @@ import (
 	"broker-service/cmd/clients"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -65,10 +66,14 @@ func (a *Config) authenticate(w http.ResponseWriter, payload clients.AuthPayload
 	ctx := context.Background()
 	// Call the auth microservices
 	authResp, err := a.clients.Auth.Login(ctx, &payload)
+	fmt.Println("ERROR:", err)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("Auth service error: " + err.Error()))
+		writeJSON(w, http.StatusBadGateway, map[string]interface{}{
+			"error":   true,
+			"message": "Auth service error: " + err.Error(),
+		})
 		return
+
 	}
 
 	//  Respond back to the client
@@ -81,8 +86,10 @@ func (a *Config) logItem(w http.ResponseWriter, payload clients.LogPayload) {
 	// Call the logger microservices
 	logResp, err := a.clients.Log.Insert(ctx, &payload)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("Logger service error: " + err.Error()))
+		writeJSON(w, http.StatusBadGateway, map[string]interface{}{
+			"error":   true,
+			"message": "logger service error: " + err.Error(),
+		})
 		return
 	}
 
@@ -90,4 +97,10 @@ func (a *Config) logItem(w http.ResponseWriter, payload clients.LogPayload) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(logResp)
 
+}
+
+func writeJSON(w http.ResponseWriter, status int, payload any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(payload)
 }
