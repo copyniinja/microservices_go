@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"logger-service/data"
 	"net/http"
 	"os"
 	"time"
@@ -17,6 +18,7 @@ var mongoUrl string
 var client *mongo.Client
 
 type Config struct {
+	Models data.Models
 }
 
 func main() {
@@ -35,7 +37,9 @@ func main() {
 	}()
 
 	// Server
-	app := Config{}
+	app := Config{
+		Models: *data.New(client),
+	}
 	srv := &http.Server{
 		Addr:    webPort,
 		Handler: app.routes(),

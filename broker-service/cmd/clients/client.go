@@ -7,9 +7,10 @@ import (
 
 type Clients struct {
 	Auth *AuthClient
+	Log  *LogClient
 }
 
-func NewClients(authUrl string) *Clients {
+func NewClients(authUrl, logUrl string) *Clients {
 
 	httpClient := &http.Client{
 		Timeout: 5 * time.Second,
@@ -22,5 +23,6 @@ func NewClients(authUrl string) *Clients {
 
 	return &Clients{
 		Auth: NewAuthClient(authUrl, httpClient),
+		Log:  NewLogClient(logUrl, httpClient),
 	}
 }

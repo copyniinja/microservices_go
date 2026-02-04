@@ -35,6 +35,7 @@ func (a *Config) Broker(w http.ResponseWriter, r *http.Request) {
 type RequestPayload struct {
 	Action string               `json:"action"`
 	Auth   *clients.AuthPayload `json:"auth_payload,omitempty"`
+	Log    *clients.LogPayload  `json:"log_payload,omitempty"`
 }
 
 func (a *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +51,8 @@ func (a *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	switch reqPayload.Action {
 	case "auth":
 		a.authenticate(w, *reqPayload.Auth)
+	case "log":
+		a.logItem(w, *reqPayload.Log)
 	default:
 		w.WriteHeader(400)
 		w.Write([]byte("Unknown action"))
@@ -71,4 +74,20 @@ func (a *Config) authenticate(w http.ResponseWriter, payload clients.AuthPayload
 	//  Respond back to the client
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(authResp)
+}
+
+func (a *Config) logItem(w http.ResponseWriter, payload clients.LogPayload) {
+	ctx := context.Background()
+	// Call the logger microservices
+	logResp, err := a.clients.Log.Insert(ctx, &payload)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("Logger service error: " + err.Error()))
+		return
+	}
+
+	//  Respond back to the client
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(logResp)
+
 }

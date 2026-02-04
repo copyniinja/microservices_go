@@ -23,6 +23,7 @@ func (a *Config) routes() http.Handler {
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Hello from logger server")
 	})
+	r.Post("/log", a.WriteLog)
 
 	return r
 

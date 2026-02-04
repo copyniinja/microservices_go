@@ -21,8 +21,9 @@ type Config struct {
 func main() {
 
 	authBaseUrl := "http://auth-service:5000"
+	loggerBaseUrl := "http://logger-service:6001"
 	app := Config{
-		clients: clients.NewClients(authBaseUrl),
+		clients: clients.NewClients(authBaseUrl, loggerBaseUrl),
 	}
 
 	server := &http.Server{
