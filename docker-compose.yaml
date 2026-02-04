@@ -64,7 +64,7 @@ services:
     environment:
       MONGODB_URI: mongodb://admin:secret@logger-db:27017/logs?authSource=admin
     ports:
-      - "6000:6000"
+      - "6001:6001"
 
 volumes:
   auth_pg_data:

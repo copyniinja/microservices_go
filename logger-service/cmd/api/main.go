@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-var webPort = ":6000"
+var webPort = ":6001"
 var mongoUrl string
 var client *mongo.Client
 
@@ -41,7 +41,8 @@ func main() {
 		Handler: app.routes(),
 	}
 
-	srv.ListenAndServe()
+	err = srv.ListenAndServe()
+	log.Fatal(err)
 
 }
 
