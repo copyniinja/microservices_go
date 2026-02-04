@@ -2,7 +2,9 @@ package main
 
 import (
 	"auth-service/data"
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,6 +33,12 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 	valid, err := user.PasswordMatches(requestPayload.Password)
 	if err != nil || !valid {
 		app.errorJSON(w, errors.New("invalid credentials"), http.StatusBadRequest)
+		return
+	}
+	//  Log
+	err = logAuthRequest("authentication", fmt.Sprintf("%s user logged in.", user.Email))
+	if err != nil {
+		app.errorJSON(w, errors.New("Internal server error."), http.StatusInternalServerError)
 		return
 	}
 
@@ -106,4 +114,28 @@ func (app *Config) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.writeJSON(w, http.StatusCreated, payload)
+}
+
+type LogPayload struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
+}
+
+func logAuthRequest(name, data string) error {
+	var body LogPayload
+	body.Name = name
+	body.Data = data
+	jsonData, _ := json.Marshal(body)
+	loggerUrl := "http://logger-service:6001/log"
+	request, err := http.NewRequest("POST", loggerUrl, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	client := &http.Client{}
+
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	return nil
 }
