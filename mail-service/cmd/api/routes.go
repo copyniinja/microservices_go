@@ -23,7 +23,7 @@ func (a *Config) routes() http.Handler {
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Hello from Mail server")
 	})
-
+	r.Post("/send-email", a.sendEmail)
 	return r
 
 }

@@ -23,23 +23,7 @@ func main() {
 	app := &Config{
 		Mailer: mailer,
 	}
-	err := mailer.Send(
-		"./templates/welcome.html",
-		Message{
-			To:      "user@test.com",
-			Subject: "Welcome!",
-			DataMap: map[string]any{
-				"Name": "Faiyaz",
-			},
-		},
-	)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("✅ email sent")
-	log.Println(app)
 	server := NewServer(webPort, app.routes())
 	server.Start()
 }

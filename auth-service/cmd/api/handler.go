@@ -41,7 +41,8 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, errors.New("Internal server error."), http.StatusInternalServerError)
 		return
 	}
-
+	// mail
+	go sendWelcomeEmail(user.Email, user.FirstName)
 	payload := jsonResponse{
 		Error:   false,
 		Message: fmt.Sprintf("Logged in user %s", user.Email),
@@ -138,4 +139,33 @@ func logAuthRequest(name, data string) error {
 		return err
 	}
 	return nil
+}
+
+func sendWelcomeEmail(userEmail, firstName string) {
+	emailPayload := map[string]any{
+		"to":       userEmail,
+		"subject":  "Welcome to MyApp!",
+		"template": "welcome.html",
+		"data": map[string]string{
+			"Name": firstName,
+		},
+	}
+
+	jsonData, _ := json.Marshal(emailPayload)
+	mailerURL := "http://mail-service:6002/send-email"
+
+	req, err := http.NewRequest("POST", mailerURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println("Mailer request error:", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Mailer error:", err)
+		return
+	}
+	defer resp.Body.Close()
 }
