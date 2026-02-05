@@ -36,5 +36,10 @@ func (app *Config) sendEmail(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("email is being sent"))
+	resp := map[string]any{
+		"Error":   false,
+		"Message": "Email is being sent",
+	}
+	app.writeJSON(w, 200, resp)
+
 }

@@ -21,6 +21,12 @@
       <a href="javascript:void(0)" class="btn btn-outline-secondary" id="logBtn"
         >Test Log</a
       >
+      <a
+        href="javascript:void(0)"
+        class="btn btn-outline-secondary"
+        id="mailBtn"
+        >Send Mail</a
+      >
 
       <div
         id="output"
@@ -57,6 +63,7 @@
   const brokerButton = document.getElementById("brokerBtn");
   const authButton = document.getElementById("authBtn");
   const logButton = document.getElementById("logBtn");
+  const mailButton = document.getElementById("mailBtn");
   const output = document.getElementById("output");
   const sent = document.getElementById("payload");
   const received = document.getElementById("received");
@@ -131,6 +138,32 @@
 
       const data = await resp.json();
       output.innerText = "Response from logger-service";
+      received.innerText = JSON.stringify(data, null, 2);
+
+      sent.innerText = JSON.stringify(payload, null, 2);
+    } catch (err) {
+      received.innerText = "Error: " + err;
+      output.innerText = "Failed!";
+    }
+  });
+
+  mailButton.addEventListener("click", async () => {
+    // Example payload to send
+    const payload = {
+      to: "faiyaz@gmail.com",
+      subject: "Welcome To The Clan!!!",
+      template: "welcome.html",
+      data: { Name: "Faiyaz" },
+    };
+    try {
+      const resp = await fetch("http://localhost:6002/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await resp.json();
+      output.innerText = "Response from mail-service";
       received.innerText = JSON.stringify(data, null, 2);
 
       sent.innerText = JSON.stringify(payload, null, 2);
