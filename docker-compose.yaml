@@ -72,6 +72,15 @@ services:
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Web UI
+  mail-service:
+    container_name: mail-service
+    depends_on:
+      - mailhog
+    build:
+      context: ./mail-service
+      dockerfile: mail-service.dockerfile
+    ports:
+      - "6002:6002"
 volumes:
   auth_pg_data:
   mongo_data:
