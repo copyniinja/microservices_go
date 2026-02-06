@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -15,14 +16,19 @@ func failOnError(err error, msg string) {
 
 // Connect to RabbitMQ Server //url : "amqp://guest:guest@localhost:5672/"
 func connectRabbitMQ(url string) *amqp.Connection {
-	// amqp.Dial
-	conn, err := amqp.Dial(url)
 
-	failOnError(err, "Failed to connect to Rabbitmq")
+	for {
+		// amqp.Dial
+		conn, err := amqp.Dial(url)
 
-	defer conn.Close()
+		if err == nil {
+			log.Println("Connected to RabbitMQ")
+			return conn
+		}
+		log.Println("RabbitMQ not ready... retrying in 3 seconds")
+		time.Sleep(3 * time.Second)
+	}
 
-	return conn
 }
 
 /*
@@ -33,7 +39,7 @@ Use: Every producer and consumer usually has one channel.
 func createChannel(conn *amqp.Connection) *amqp.Channel {
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
+	// defer ch.Close()
 
 	return ch
 }
@@ -140,6 +146,7 @@ func consumeMessages(ch *amqp.Channel, queueName string) {
 	go func() {
 		for d := range msgs {
 			log.Printf("Consumer^^ %s received message: %s", queueName, d.Body)
+			d.Ack(false)
 		}
 	}()
 
@@ -151,5 +158,34 @@ func consumeMessages(ch *amqp.Channel, queueName string) {
 
 // -----------------
 func main() {
+	// 1. Connection
+	rabbitUrl := "amqp://guest:guest@rabbitmq:5672/"
+	conn := connectRabbitMQ(rabbitUrl)
+	defer conn.Close()
+
+	// 2. Create Channel
+	ch := createChannel(conn)
+	defer ch.Close()
+
+	// 3. Declare Exchange
+	declareExchange(ch, "order-exchange", "direct")
+	declareExchange(ch, "payment-exchange", "direct")
+
+	// 4. Declare Queue and Bind them
+	declareQueueAndBind(ch, "email-queue", "order-exchange", "order.email")
+	declareQueueAndBind(ch, "analytics-queue", "order-exchange", "order.analytics")
+	declareQueueAndBind(ch, "order-queue", "order-exchange", "order.placed")
+
+	// 5. Start Consumers
+	go consumeMessages(ch, "email-queue")
+	go consumeMessages(ch, "analytics-queue")
+	go consumeMessages(ch, "order-queue")
+
+	// 6. Publishers sending events
+	publishMessage(ch, "order-exchange", "order.placed", "Order #707: Pokemon 1st edition base set Charizard(PSA10)! XD.")
+	publishMessage(ch, "order-exchange", "order.email", "Send email for Order #707")
+	publishMessage(ch, "order-exchange", "order.analytics", "Update analytics for Order #707")
+
+	select {} // block forever
 
 }
