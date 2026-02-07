@@ -81,6 +81,22 @@ services:
       dockerfile: mail-service.dockerfile
     ports:
       - "6002:6002"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15673:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+    test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
 volumes:
   auth_pg_data:
   mongo_data:
+  rabbitmq_data:
