@@ -9,12 +9,12 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-const rabbitmqUrl = "amqp://guest:guest@rabbitmq:5762/"
+const rabbitmqUrl = "amqp://guest:guest@rabbitmq:5672/"
 
 func main() {
 	// connect to rabbitmq
 	conn := connectRabbitMQ(rabbitmqUrl)
-	log.Println(conn)
+	// log.Println(conn)
 
 	// start listening for messages
 	log.Println("Listening for and consuming rabbitmq messages")

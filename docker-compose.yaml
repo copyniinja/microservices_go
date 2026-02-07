@@ -91,11 +91,19 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-    test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-    interval: 10s
-    timeout: 5s
-    retries: 5
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  listener-service:
+    container_name: listener-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    build:
+      context: ./listener-service
+      dockerfile: listener-service.dockerfile
 volumes:
   auth_pg_data:
   mongo_data:
