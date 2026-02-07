@@ -5,25 +5,33 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const webPort = 4000
 
 type Config struct {
 	clients *clients.Clients
+	Rabbit  *amqp.Connection
 }
+
+const rabbitmqUrl = "amqp://guest:guest@rabbitmq:5672/"
 
 func main() {
 
 	authBaseUrl := "http://auth-service:5000"
 	loggerBaseUrl := "http://logger-service:6001"
+	conn := connectRabbitMQ(rabbitmqUrl)
 	app := Config{
 		clients: clients.NewClients(authBaseUrl, loggerBaseUrl),
+		Rabbit:  conn,
 	}
 
 	server := &http.Server{
@@ -56,5 +64,33 @@ func main() {
 	}
 
 	fmt.Println("Server shut down gracefully")
+
+}
+
+func connectRabbitMQ(url string) *amqp.Connection {
+	backoff := time.Second
+	maxBackoff := 30 * time.Second
+
+	for {
+		conn, err := amqp.Dial(url)
+		if err == nil {
+			log.Println("Connected to rabbitmq.")
+			return conn
+		}
+
+		// add jitter
+		jitter := time.Duration(rand.Int63n(int64(time.Second)))
+		wait := backoff + jitter
+
+		log.Printf("RabbitMQ not ready. Retrying in %v...", wait)
+		time.Sleep(wait)
+
+		// Double backoff
+		backoff *= 2
+		if backoff > maxBackoff {
+			backoff = maxBackoff
+		}
+
+	}
 
 }

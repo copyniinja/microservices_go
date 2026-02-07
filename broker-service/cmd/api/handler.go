@@ -2,9 +2,12 @@ package main
 
 import (
 	"broker-service/cmd/clients"
+	"broker-service/event"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 )
@@ -38,6 +41,10 @@ type RequestPayload struct {
 	Auth   *clients.AuthPayload `json:"auth_payload,omitempty"`
 	Log    *clients.LogPayload  `json:"log_payload,omitempty"`
 }
+type LogPayload struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
+}
 
 func (a *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	var reqPayload RequestPayload
@@ -53,7 +60,7 @@ func (a *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "auth":
 		a.authenticate(w, *reqPayload.Auth)
 	case "log":
-		a.logItem(w, *reqPayload.Log)
+		a.logEventViaRabbit(w, *reqPayload.Log)
 	default:
 		w.WriteHeader(400)
 		w.Write([]byte("Unknown action"))
@@ -103,4 +110,77 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(payload)
+}
+
+type jsonResponse struct {
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
+}
+
+func readJSON(w http.ResponseWriter, r *http.Request, data any) error {
+	maxBytes := 1048576 // one megabyte
+
+	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
+
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(data)
+	if err != nil {
+		return err
+	}
+
+	err = dec.Decode(&struct{}{})
+	if err != io.EOF {
+		return errors.New("body must have only a single JSON value")
+	}
+
+	return nil
+}
+
+func errorJSON(w http.ResponseWriter, err error, status ...int) error {
+	statusCode := http.StatusBadRequest
+
+	if len(status) > 0 {
+		statusCode = status[0]
+	}
+
+	var payload jsonResponse
+	payload.Error = true
+	payload.Message = err.Error()
+
+	writeJSON(w, statusCode, payload)
+	return nil
+}
+func (app *Config) logEventViaRabbit(w http.ResponseWriter, l clients.LogPayload) {
+	err := app.pushToQueue(l.Name, l.Data)
+	if err != nil {
+		errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "logged via RabbitMQ"
+
+	writeJSON(w, http.StatusAccepted, payload)
+}
+
+// pushToQueue pushes a message into RabbitMQ
+func (app *Config) pushToQueue(name, msg string) error {
+	emitter, err := event.NewEventEmitter(app.Rabbit)
+	if err != nil {
+		return err
+	}
+
+	payload := LogPayload{
+		Name: name,
+		Data: msg,
+	}
+
+	j, _ := json.MarshalIndent(&payload, "", "\t")
+	err = emitter.Push(string(j), "log.INFO")
+	if err != nil {
+		return err
+	}
+	return nil
 }
