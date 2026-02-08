@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"logger-service/data"
+	"net"
 	"net/http"
+	"net/rpc"
 	"os"
 	"time"
 
@@ -45,8 +47,41 @@ func main() {
 		Handler: app.routes(),
 	}
 
+	// Register rpc server
+	err = rpc.Register(new(RPCServer))
+	if err != nil {
+		log.Println("Failed to register rpc server")
+	}
+
+	// start rpc server
+	go app.rpcListen()
+
+	// http server
 	err = srv.ListenAndServe()
 	log.Fatal(err)
+
+}
+
+// RPC Listen
+const rpcPort = "5001"
+
+func (app *Config) rpcListen() error {
+	fmt.Println("Starting rpc server on port:" + rpcPort)
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", rpcPort))
+	if err != nil {
+		return err
+	}
+	defer listener.Close()
+
+	// loop forever
+	for {
+		rpcConn, err := listener.Accept()
+		if err != nil {
+			continue
+		}
+		go rpc.ServeConn(rpcConn)
+	}
 
 }
 
