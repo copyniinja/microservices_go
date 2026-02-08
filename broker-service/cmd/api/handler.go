@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/rpc"
 )
 
 type JsonResponse struct {
@@ -61,6 +62,8 @@ func (a *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		a.authenticate(w, *reqPayload.Auth)
 	case "log":
 		a.logEventViaRabbit(w, *reqPayload.Log)
+	case "log-rpc":
+		a.LogEventViaRPC(w, *reqPayload.Log)
 	default:
 		w.WriteHeader(400)
 		w.Write([]byte("Unknown action"))
@@ -183,4 +186,43 @@ func (app *Config) pushToQueue(name, msg string) error {
 		return err
 	}
 	return nil
+}
+
+//---- Log Item via RPC --------
+
+// PAyload Should be exactly sanme
+type RPCPayload struct {
+	Name string
+	Data string
+}
+
+func (app *Config) LogEventViaRPC(w http.ResponseWriter, l clients.LogPayload) {
+	// rpc client
+	client, err := rpc.Dial("tcp", "logger-service:5001")
+	if err != nil {
+		errorJSON(w, err)
+		return
+	}
+	// defer client.Close()
+
+	rpcPayload := RPCPayload{
+		Name: l.Name,
+		Data: l.Data,
+	}
+
+	var result string
+	// RPCServer method LogInfo == RPCServer.LogInfo
+	// &result <- *res
+	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	if err != nil {
+		errorJSON(w, err)
+		return
+	}
+	payload := JsonResponse{
+		Success: true,
+		Message: result,
+	}
+
+	writeJSON(w, http.StatusAccepted, payload)
+
 }
