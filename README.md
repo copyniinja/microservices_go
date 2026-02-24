@@ -1,20 +1,23 @@
-# Microservices Architecture (HTTP-Based)
+# Microservices Architecture (Event-Driven with RabbitMQ)
 
 ## Overview
 
-This project implements a distributed microservices architecture written in **Go**, where services communicate synchronously using **HTTP + JSON**.
+This project implements a distributed microservices architecture written in **Go** with hybrid communication patterns:
+
+- **Asynchronous**: Event-driven messaging via **RabbitMQ**
+- **Synchronous**: Service-to-service calls via **HTTP + JSON**
 
 The system demonstrates core backend engineering patterns including:
 
+- Event-driven architecture (pub/sub)
 - Service-to-service communication
 - Centralized logging
 - Email service integration
 - Authentication with PostgreSQL
 - NoSQL logging with MongoDB
 - Dockerized infrastructure
+- Message queue consumer pattern
 - Health checks between services
-
-This branch represents the **stable HTTP-based architecture** before migrating to an event-driven system using RabbitMQ.
 
 ---
 
@@ -24,25 +27,33 @@ This branch represents the **stable HTTP-based architecture** before migrating t
 Client (Frontend)
         |
         v
-   Broker Service
-        |
-  -------------------------
-  |          |           |
-Auth     Logger      Mail
-(Postgres) (MongoDB) (SMTP/MailHog)
+   Broker Service ←──────────────────┐
+        |                              |
+        ├─→ Auth Service              |
+        ├─→ Mail Service              |
+        └─→ RabbitMQ (publish events) │
+               |                       │
+               v                       │
+         Listener Service (consume)────┘
+               |
+               v
+         Logger Service (HTTP call)
+         (Postgres/MongoDB)
 ```
 
-### Communication Style
+### Communication Patterns
 
-All services communicate via:
+**1. Event-Driven (Async)**
 
-👉 **REST APIs (HTTP/JSON)**
+- Broker Service → publishes log events to RabbitMQ (`logs_topic` exchange)
+- Listener Service → subscribes to `log.INFO` and `log.ERROR` topics
+- Uses topic-based routing for flexible event distribution
 
-Example:
+**2. Synchronous (HTTP/JSON)**
 
-- Auth → Logger (log authentication events)
-- Auth → Mail (send welcome emails)
-- Frontend → Mail (service health check)
+- Listener Service → Logger Service (persists logs)
+- Broker Service → Auth Service (user validation)
+- Broker Service → Mail Service (email delivery)
 
 ---
 
@@ -98,12 +109,49 @@ Handles transactional email delivery.
 
 Acts as the **entry point** for client requests and routes traffic to appropriate services.
 
+**Features:**
+
+- `/log` endpoint that publishes events to RabbitMQ
+- Routes requests to Auth, Logger, and Mail services
+- Publishes log events with severity levels (`log.INFO`, `log.ERROR`)
+- HTTP clients for service-to-service calls
+
 **Why it exists:**
 
 - Prevent frontend from calling multiple services directly
-- Centralize request handling
+- Centralize request handling & event publishing
+- Decouple services via event queue
 - Improve security boundaries
-- Simplify future scaling
+
+---
+
+### Listener Service
+
+Asynchronous message consumer that bridges RabbitMQ and the Logger service.
+
+**Features:**
+
+- Subscribes to RabbitMQ `logs_topic` exchange
+- Listens for `log.INFO` and `log.ERROR` topics
+- Automatically binds to dynamically created queues
+- Consumes messages and forwards to Logger Service via HTTP
+- Runs continuously with graceful error handling
+- Horizontal scalability via competing consumers pattern
+
+**Flow:**
+
+1. Broker Service publishes event to RabbitMQ: `POST /log` → RabbitMQ push
+2. Listener Service consumes from queue (topic-based routing)
+3. Unmarshals JSON payload and calls Logger Service HTTP API
+4. Logger Service persists the log to MongoDB
+
+**RabbitMQ Configuration:**
+
+- **Exchange:** `logs_topic` (Topic exchange for flexible routing)
+- **Queue:** Auto-generated (exclusive, durable)
+- **Routing Keys:** `log.INFO`, `log.ERROR`
+
+This decouples the Broker from direct Logger dependency and allows future consumers (email alerts, monitoring services, etc.) to bind to the same topics without modifying existing code.
 
 ---
 
@@ -147,31 +195,37 @@ No real emails are sent.
 
 ---
 
-## Known Limitations
+## RabbitMQ Integration
 
-Synchronous communication introduces:
+**Current Implementation:**
 
-- Tight coupling between services
-- Retry complexity
-- Latency stacking
-- Reduced fault tolerance
+The system already uses RabbitMQ for event-driven logging workflows:
+
+- **Publisher:** Broker Service publishes log events
+- **Consumer:** Listener Service consumes and processes events
+- **Pattern:** Topic exchange with selective subscription
+- **Reliability:** Auto-acknowledgment with durable queues
+
+**Benefits:**
+
+- Decouples Broker from Logger (no direct HTTP dependency)
+- Allows multiple consumers to subscribe to the same topics
+- Better resilience: if Logger is down, events stay in queue
+- Foundation for future event-driven features (alerts, webhooks, analytics)
 
 ---
 
-## Next Evolution
+## Known Characteristics
 
-The system will migrate toward:
+**Synchronous (HTTP):**
 
-👉 **Event-Driven Architecture using RabbitMQ**
+- Broker ↔ Auth Service
+- Broker ↔ Mail Service
+- Listener ↔ Logger Service
 
-Goals:
+**Asynchronous (RabbitMQ):**
 
-- Asynchronous workflows
-- Improved resilience
-- Better scalability
-- Reduced service dependency
-
-This HTTP branch is preserved as a **baseline architecture**.
+- Broker → Listener (via message queue)
 
 ---
 
@@ -220,15 +274,17 @@ This project demonstrates understanding of:
 
 ---
 
-## Future Improvements
+## Future Improvements & Enhancements
 
-- RabbitMQ integration
-- Event-driven workflows
-- gRPC for internal communication
+- Expand event types (auth events, mail events, system events)
+- Dead-letter queues (DLQ) for failed message handling
+- Message retry strategies and circuit breakers
+- Multiple consumer groups for different listening patterns
+- gRPC for internal service communication
+- Distributed tracing (OpenTelemetry)
 - Kubernetes deployment
-- Distributed tracing
-- Circuit breakers
-- Rate limiting
+- Consumer lag monitoring
+- Event sourcing for audit trails
 
 ---
 
